@@ -47,9 +47,14 @@ function love.load()
     -- Game state
     gameState = 'start'
 
+    sounds = {
+        ['paddle'] = love.audio.newSource('paddle.wav', 'static'),
+        ['wall'] = love.audio.newSource('wall.wav', 'static'),
+        ['point'] = love.audio.newSource('point.wav', 'static'),
+    }
     push:setupScreen(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
         fullscreen = false,
-        resizable = false,
+        resizable = true,
         vsync = true
     })
 end 
@@ -59,6 +64,7 @@ function love.update(dt)
         ball:update(dt)
 
         if ball.x <= 0 then 
+            sounds['point']:play()
             player2Score = player2Score + 1
             servingPlayer = 1
             ball:reset(100)
@@ -71,6 +77,7 @@ function love.update(dt)
         end
 
         if ball.x >= VIRTUAL_WIDTH - ball.width then 
+            sounds['point']:play()
             player1Score = player1Score + 1
             servingPlayer = 2
             ball:reset(-100)
@@ -87,21 +94,25 @@ function love.update(dt)
         if ball:collides(player1) then 
             -- Deflect ball to the right
             ball.dx = -ball.dx
+            sounds['paddle']:play()
         end
     
         if ball:collides(player2) then 
             -- Deflect ball to the left
             ball.dx = -ball.dx 
+            sounds['paddle']:play()
         end
     
         if ball.y < 0 then 
             ball.dy = -ball.dy 
             ball.y = 0
+            sounds['wall']:play()
         end 
     
         if ball.y > VIRTUAL_HEIGHT - ball.height then
             ball.dy = -ball.dy 
             ball.y = VIRTUAL_HEIGHT - ball.height
+            sounds['wall']:play()
         end
     end
     
@@ -191,4 +202,8 @@ function displayFPS()
     love.graphics.setFont(smallFont)
     love.graphics.print("FPS: "..tostring(love.timer.getFPS( )), 40, 20)
     love.graphics.setColor(1, 1, 1, 1)
+end
+
+function love.resize(height, width)
+    push:resize(height, width)
 end
