@@ -1,24 +1,25 @@
+-- Imports
 -- https://github.com/Ulydev/push
 push = require 'push'
-
 Class = require 'class'
-
 require 'Ball'
 require 'Paddle'
 
-
+-- Constants
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
-
 VIRTUAL_WIDTH = 432
 VIRTUAL_HEIGHT = 243
 
-PADDLE_SPEED = 200
+PADDLE_SPEED = 300
 
 --[[
     Runs when the game first starts up, only once; used to initialize the game.
 ]]
 function love.load()
+    love.window.setTitle("Pong")
+
+    -- Seed the random generator
     love.math.random(os.time())
 
     -- use nearest-neighbor filtering on upscaling and downscaling to prevent blurring of text 
@@ -29,29 +30,30 @@ function love.load()
     scoreFont = love.graphics.newFont('font.ttf', 32)
     victoryFont = love.graphics.newFont('font.ttf', 24)
 
-    love.window.setTitle("Pong")
-
-    -- Score counter
-    player1Score = 0
-    player2Score = 0
-
-    servingPlayer = math.random(2) == 1 and 1 or 2 
-    winningPlayer = 0
-
-    -- Paddle Initialisation
-    player1 = Paddle(5, 20, 5, 20)
-    player2 = Paddle(VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 30, 5, 20)
-
-    ball = Ball(VIRTUAL_WIDTH / 2 - 2, VIRTUAL_HEIGHT / 2 - 2, 4, 4, servingPlayer)
-
-    -- Game state
-    gameState = 'start'
-
+    -- Load sounds
     sounds = {
         ['paddle'] = love.audio.newSource('paddle.wav', 'static'),
         ['wall'] = love.audio.newSource('wall.wav', 'static'),
         ['point'] = love.audio.newSource('point.wav', 'static'),
     }
+    
+    -- Player initialisation
+    player1 = Paddle(5, 20, 5, 20, PADDLE_SPEED, false)
+    player2 = Paddle(VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 30, 5, 20, PADDLE_SPEED, true)
+
+    player1Score = 0
+    player2Score = 0
+ 
+    servingPlayer = math.random(2) == 1 and 1 or 2 
+    winningPlayer = 0
+
+    -- Ball initialisation
+    ball = Ball(VIRTUAL_WIDTH / 2 - 2, VIRTUAL_HEIGHT / 2 - 2, 4, 4, servingPlayer)
+
+    -- Game state
+    gameState = 'start'
+
+    -- Use the push Class to zoom into the the screen
     push:setupScreen(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
         fullscreen = false,
         resizable = true,
@@ -59,37 +61,29 @@ function love.load()
     })
 end 
 
+--[[
+    Runs on each gameloop
+]]
 function love.update(dt)
     if gameState == 'play' then
+        
         ball:update(dt)
 
         if ball.x <= 0 then 
             sounds['point']:play()
             player2Score = player2Score + 1
             servingPlayer = 1
-            ball:reset(100)
-            if player2Score >= 2 then
-                gameState = 'victory'
-                winningPlayer = 2
-            else
-                gameState = 'serve'
-            end
+            gameState = 'serve'
+            ball:reset(200)
         end
 
         if ball.x >= VIRTUAL_WIDTH - ball.width then 
             sounds['point']:play()
             player1Score = player1Score + 1
             servingPlayer = 2
-            ball:reset(-100)
             gameState = 'serve'
-            if player1Score >= 2 then
-                gameState = 'victory'
-                winningPlayer = 1
-            else
-                gameState = 'serve'
-            end
+            ball:reset(-200)
         end
-
 
         if ball:collides(player1) then 
             -- Deflect ball to the right
@@ -102,17 +96,14 @@ function love.update(dt)
             ball.dx = -ball.dx 
             sounds['paddle']:play()
         end
-    
-        if ball.y < 0 then 
-            ball.dy = -ball.dy 
-            ball.y = 0
-            sounds['wall']:play()
-        end 
-    
-        if ball.y > VIRTUAL_HEIGHT - ball.height then
-            ball.dy = -ball.dy 
-            ball.y = VIRTUAL_HEIGHT - ball.height
-            sounds['wall']:play()
+
+        -- Victory check
+        if player2Score >= 2 then
+            gameState = 'victory'
+            winningPlayer = 2
+        elseif player1Score >= 2 then
+            gameState = 'victory'
+            winningPlayer = 1
         end
     end
     
@@ -125,6 +116,7 @@ function love.update(dt)
         player1.dy = 0
     end
     
+   
     if love.keyboard.isDown('up') then
         player2.dy = -PADDLE_SPEED
     elseif love.keyboard.isDown('down') then
@@ -132,6 +124,7 @@ function love.update(dt)
     else
         player2.dy = 0
     end
+    
 
     player1:update(dt)
     player2:update(dt)
@@ -201,6 +194,9 @@ function displayFPS()
     love.graphics.setColor(0, 1, 0, 1)
     love.graphics.setFont(smallFont)
     love.graphics.print("FPS: "..tostring(love.timer.getFPS( )), 40, 20)
+    love.graphics.print("Impact: "..tostring(player2.impactY), 80, 20)
+    love.graphics.print("Paddle speed: "..tostring(player2.paddle_speed), 80, 40)
+    love.graphics.print("dy: "..tostring(player2.dy), 80, 60)
     love.graphics.setColor(1, 1, 1, 1)
 end
 

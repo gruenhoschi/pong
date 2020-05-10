@@ -8,9 +8,9 @@ function Ball:init(x, y, width, height, servingPlayer)
 
     -- Start x-velocity
     if servingPlayer == 1 then 
-        self.dx = 100
+        self.dx = 200
     else 
-        self.dx = -100
+        self.dx = -200
     end
     
     self.dy = love.math.random(-50, 50)
@@ -28,7 +28,6 @@ function Ball:collides(box)
     end
 
     return true 
-
 end
 
 function Ball:reset(dx)
@@ -42,6 +41,19 @@ end
 function Ball:update(dt)
     self.x = self.x + self.dx * dt
     self.y = self.y + self.dy * dt
+
+    -- Hitting the ceiling and the floor
+    if self.y < 0 then 
+        self.dy = -self.dy 
+        self.y = 0
+        sounds['wall']:play()
+    end 
+
+    if self.y > VIRTUAL_HEIGHT - self.height then
+        self.dy = -self.dy 
+        self.y = VIRTUAL_HEIGHT - self.height
+        sounds['wall']:play()
+    end
 end
 
 function Ball:render()
